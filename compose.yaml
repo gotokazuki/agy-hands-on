@@ -1,0 +1,52 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:18
+    command: -c 'config_file=/etc/postgresql/postgresql.conf'
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_USER=user
+      - POSTGRES_DB=mydb
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker/postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
+      - postgres-data:/var/lib/postgresql
+  adminer:
+    container_name: adminer
+    image: adminer:latest
+    restart: always
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    ports:
+      - 8081:8080
+      
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      - SERVER_SERVLET_CONTEXT_PATH=/api
+    depends_on:
+      - postgres
+
+  frontend:
+    container_name: frontend
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - 5173:5173
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:
+  frontend-node-modules:

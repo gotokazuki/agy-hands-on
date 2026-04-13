@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  max-http-header-size: 16KB
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: backoffice-admin-api
+  datasource:
+    url: jdbc:postgresql://postgres:5432/mydb
+    username: user
+    password: pass
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://postgres:5432/mydb
+    user: user
+    password: pass
+    baseline-on-migrate: true
+
+logging:
+  level:
+    org.springframework.web: INFO
+    org.jooq: DEBUG

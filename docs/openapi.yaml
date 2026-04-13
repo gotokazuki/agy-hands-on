@@ -1,0 +1,612 @@
+openapi: 3.1.0
+info:
+  title: Admin Portal API
+  version: 1.0.0
+  description: ユーザー、グループ、および権限管理のための管理画面用API
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: ログイン
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  minLength: 5
+                  maxLength: 255
+                password:
+                  type: string
+                  writeOnly: true
+                  minLength: 8
+                  maxLength: 128
+      responses:
+        "200":
+          description: ログイン成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: トークンリフレッシュ
+      operationId: refresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: リフレッシュ成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: ログアウト
+      operationId: logout
+      responses:
+        "204":
+          description: ログアウト成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: ユーザー一覧取得
+      operationId: listUsers
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags:
+        - Users
+      summary: ユーザー作成
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          description: 作成完了
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Users
+      summary: ユーザー詳細取得
+      operationId: getUser
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags:
+        - Users
+      summary: ユーザー更新
+      operationId: patchUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: バリデーションエラー
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - Users
+      summary: ユーザー削除
+      operationId: deleteUser
+      responses:
+        "204":
+          description: 削除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+ 
+  /me:
+    get:
+      tags:
+        - Users
+      summary: 自身のユーザー情報取得
+      operationId: getMe
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags:
+        - Users
+      summary: 自身のユーザー情報更新
+      operationId: patchMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeUpdate"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /groups:
+    get:
+      tags:
+        - Groups
+      summary: グループ一覧取得
+      operationId: listGroups
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags:
+        - Groups
+      summary: グループ作成
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreate"
+      responses:
+        "201":
+          description: 作成完了
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Groups
+      summary: グループ詳細取得
+      operationId: getGroup
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags:
+        - Groups
+      summary: グループ更新
+      operationId: patchGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUpdate"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: バリデーションエラー
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - Groups
+      summary: グループ削除
+      operationId: deleteGroup
+      responses:
+        "204":
+          description: 削除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /permissions:
+    get:
+      tags:
+        - Permissions
+      summary: 利用可能な権限一覧の取得
+      operationId: listPermissions
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Permission"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /stats:
+    get:
+      tags:
+        - Stats
+      summary: システム統計の取得
+      operationId: getStats
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  responses:
+    BadRequest:
+      description: リクエスト不正またはバリデーションエラー
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Unauthorized:
+      description: 認証エラー
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    NotFound:
+      description: リソースが見つかりません
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: 問題の型を識別するためのURI
+        title:
+          type: string
+          description: 問題の短い人間可読の要約
+        status:
+          type: integer
+          description: HTTPステータスコード
+        detail:
+          type: string
+          description: 問題に関する人間可読の説明
+        instance:
+          type: string
+          format: uri
+          description: 問題の発生した特定のリソースを識別するためのURI
+    
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 255
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        is_active:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        group_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    UserCreate:
+      type: object
+      required:
+        - email
+        - password
+        - last_name
+        - first_name
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+          maxLength: 128
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        group_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    UserUpdate:
+      type: object
+      properties:
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        is_active:
+          type: boolean
+        group_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        permission_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    GroupCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        permission_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    GroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        permission_ids:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        resource:
+          type: string
+          pattern: '^[a-z_]+$'
+        action:
+          type: string
+          enum: [read, write]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    Stats:
+      type: object
+      properties:
+        active_users:
+          type: integer
+        inactive_users:
+          type: integer
+    MeUpdate:
+      type: object
+      properties:
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
